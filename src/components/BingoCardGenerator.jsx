@@ -5,12 +5,36 @@ const GRID_SIZE = 5
 const FREE_SPACE_ROW = 2
 const FREE_SPACE_COL = 2
 
+// Seeded random number generator
+function seededRandom(seed) {
+  let value = seed
+  return function() {
+    value = (value * 9301 + 49297) % 233280
+    return value / 233280
+  }
+}
+
+function seededShuffle(array, seed) {
+  const random = seededRandom(seed)
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 function BingoCardGenerator() {
   const [backgroundImage, setBackgroundImage] = useState(null)
   const [squares, setSquares] = useState([])
   const [metadata, setMetadata] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentCard, setCurrentCard] = useState(null)
+  const [highlightedSquares, setHighlightedSquares] = useState(new Set())
+  const [winningSquares, setWinningSquares] = useState(new Set())
+  const [currentShuffledSquares, setCurrentShuffledSquares] = useState(null)
+  const [playerName, setPlayerName] = useState('')
+  const [movieName, setMovieName] = useState('')
   const canvasRef = useRef(null)
 
   // Load all assets
@@ -87,24 +111,107 @@ function BingoCardGenerator() {
       setSquares(squareImages)
       setIsLoading(false)
       
-      // Generate initial card
-      generateCard(bgImg, squareImages, metadataData)
+      // Don't generate initial card - wait for name and movie inputs
     } catch (error) {
       console.error('Error loading assets:', error)
       setIsLoading(false)
     }
   }
 
-  const shuffleArray = (array) => {
-    const shuffled = [...array]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  const generateSeed = (name, movie) => {
+    // Create a seed from the name and movie strings
+    const combined = `${name.toLowerCase().trim()}_${movie.toLowerCase().trim()}`
+    let hash = 0
+    for (let i = 0; i < combined.length; i++) {
+      const char = combined.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
     }
-    return shuffled
+    return Math.abs(hash)
   }
 
-  const generateCard = (bgImg, squareImages, metadataData) => {
+  const checkBingo = (highlighted, metadataData) => {
+    // Convert highlighted set to grid positions
+    const grid = Array(5).fill(null).map(() => Array(5).fill(false))
+    
+    // Mark highlighted squares (free space is always considered highlighted)
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
+        const squareKey = `square_${row}_${col}.png`
+        if (row === FREE_SPACE_ROW && col === FREE_SPACE_COL) {
+          // Free space is always marked
+          grid[row][col] = true
+        } else if (highlighted.has(squareKey)) {
+          grid[row][col] = true
+        }
+      }
+    }
+
+    const winning = new Set()
+
+    // Check horizontal lines
+    for (let row = 0; row < GRID_SIZE; row++) {
+      if (grid[row].every(cell => cell === true)) {
+        // All 5 in this row are highlighted
+        for (let col = 0; col < GRID_SIZE; col++) {
+          const squareKey = `square_${row}_${col}.png`
+          winning.add(squareKey)
+        }
+      }
+    }
+
+    // Check vertical lines
+    for (let col = 0; col < GRID_SIZE; col++) {
+      let allHighlighted = true
+      for (let row = 0; row < GRID_SIZE; row++) {
+        if (!grid[row][col]) {
+          allHighlighted = false
+          break
+        }
+      }
+      if (allHighlighted) {
+        // All 5 in this column are highlighted
+        for (let row = 0; row < GRID_SIZE; row++) {
+          const squareKey = `square_${row}_${col}.png`
+          winning.add(squareKey)
+        }
+      }
+    }
+
+    // Check diagonal (top-left to bottom-right)
+    let diagonal1 = true
+    for (let i = 0; i < GRID_SIZE; i++) {
+      if (!grid[i][i]) {
+        diagonal1 = false
+        break
+      }
+    }
+    if (diagonal1) {
+      for (let i = 0; i < GRID_SIZE; i++) {
+        const squareKey = `square_${i}_${i}.png`
+        winning.add(squareKey)
+      }
+    }
+
+    // Check diagonal (top-right to bottom-left)
+    let diagonal2 = true
+    for (let i = 0; i < GRID_SIZE; i++) {
+      if (!grid[i][GRID_SIZE - 1 - i]) {
+        diagonal2 = false
+        break
+      }
+    }
+    if (diagonal2) {
+      for (let i = 0; i < GRID_SIZE; i++) {
+        const squareKey = `square_${i}_${GRID_SIZE - 1 - i}.png`
+        winning.add(squareKey)
+      }
+    }
+
+    return winning
+  }
+
+  const generateCard = (bgImg, squareImages, metadataData, highlights = highlightedSquares, preserveShuffle = false, seed = null) => {
     if (!bgImg || !squareImages.length || !metadataData) return
 
     const canvas = canvasRef.current
@@ -140,7 +247,20 @@ function BingoCardGenerator() {
     )
 
     // Shuffle other squares
-    const shuffledSquares = shuffleArray(otherSquares)
+    let shuffledSquares
+    if (preserveShuffle && currentShuffledSquares && currentShuffledSquares.length === otherSquares.length) {
+      // Reuse existing shuffle when preserving (for highlight updates)
+      shuffledSquares = currentShuffledSquares
+    } else {
+      // Create new shuffle using seed if provided
+      if (seed !== null) {
+        shuffledSquares = seededShuffle(otherSquares, seed)
+      } else {
+        // Fallback to random shuffle if no seed
+        shuffledSquares = seededShuffle(otherSquares, Math.random() * 1000000)
+      }
+      setCurrentShuffledSquares(shuffledSquares)
+    }
 
     // Place squares using the EXACT extraction bounds from metadata
     // This ensures perfect alignment with how the squares were extracted
@@ -191,14 +311,117 @@ function BingoCardGenerator() {
       }
     }
 
+    // Check for bingo and get winning squares
+    const winning = checkBingo(highlights, metadataData)
+    
+    // Draw highlight circles for clicked squares
+    highlights.forEach(squareKey => {
+      const squareInfo = metadataData.squares[squareKey]
+      if (squareInfo && squareInfo.extraction_bounds) {
+        const [extractLeft, extractTop, extractRight, extractBottom] = squareInfo.extraction_bounds
+        const centerX = (extractLeft + extractRight) / 2
+        const centerY = (extractTop + extractBottom) / 2
+        const radius = Math.min((extractRight - extractLeft), (extractBottom - extractTop)) / 2 - 5
+        
+        // Draw green circle if it's part of a winning line, red otherwise
+        ctx.save()
+        ctx.globalAlpha = 0.4
+        ctx.fillStyle = winning.has(squareKey) ? 'green' : 'red'
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+        ctx.fill()
+        ctx.restore()
+      }
+    })
+    
+    // Also highlight free space if it's part of a winning line
+    const freeSpaceKey = `square_${FREE_SPACE_ROW}_${FREE_SPACE_COL}.png`
+    if (winning.has(freeSpaceKey)) {
+      const squareInfo = metadataData.squares[freeSpaceKey]
+      if (squareInfo && squareInfo.extraction_bounds) {
+        const [extractLeft, extractTop, extractRight, extractBottom] = squareInfo.extraction_bounds
+        const centerX = (extractLeft + extractRight) / 2
+        const centerY = (extractTop + extractBottom) / 2
+        const radius = Math.min((extractRight - extractLeft), (extractBottom - extractTop)) / 2 - 5
+        
+        ctx.save()
+        ctx.globalAlpha = 0.4
+        ctx.fillStyle = 'green'
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+        ctx.fill()
+        ctx.restore()
+      }
+    }
+
     // Convert canvas to image data URL
     const dataUrl = canvas.toDataURL('image/png')
     setCurrentCard(dataUrl)
   }
 
   const handleGenerate = () => {
+    if (!playerName.trim() || !movieName.trim()) {
+      alert('Please enter both your name and the movie name')
+      return
+    }
+    
     if (backgroundImage && squares.length && metadata) {
-      generateCard(backgroundImage, squares, metadata)
+      // Clear highlights and winning squares when generating new card
+      setHighlightedSquares(new Set())
+      setWinningSquares(new Set())
+      
+      // Generate seed from name and movie
+      const seed = generateSeed(playerName, movieName)
+      
+      // Generate new card with seeded shuffle
+      generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
+    }
+  }
+
+  const handleCanvasClick = (e) => {
+    if (!metadata || !currentCard) return
+
+    const img = e.currentTarget
+    const rect = img.getBoundingClientRect()
+    
+    // Calculate click position relative to the actual image dimensions
+    const scaleX = img.naturalWidth / rect.width
+    const scaleY = img.naturalHeight / rect.height
+    
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
+
+    // Find which square was clicked
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
+        const squareKey = `square_${row}_${col}.png`
+        const squareInfo = metadata.squares[squareKey]
+        
+        if (squareInfo && squareInfo.extraction_bounds) {
+          const [extractLeft, extractTop, extractRight, extractBottom] = squareInfo.extraction_bounds
+          
+          if (x >= extractLeft && x <= extractRight && y >= extractTop && y <= extractBottom) {
+            // Toggle highlight
+            const newHighlighted = new Set(highlightedSquares)
+            if (newHighlighted.has(squareKey)) {
+              newHighlighted.delete(squareKey)
+            } else {
+              newHighlighted.add(squareKey)
+            }
+            setHighlightedSquares(newHighlighted)
+            
+            // Check for bingo
+            const winning = checkBingo(newHighlighted, metadata)
+            setWinningSquares(winning)
+            
+            // Regenerate card with updated highlights (preserve shuffle)
+            if (backgroundImage && squares.length) {
+              generateCard(backgroundImage, squares, metadata, newHighlighted, true)
+            }
+            return // Exit early after finding the clicked square
+          }
+        }
+      }
     }
   }
 
@@ -223,8 +446,34 @@ function BingoCardGenerator() {
   return (
     <div className="bingo-generator">
       <div className="controls">
-        <button onClick={handleGenerate} className="generate-btn">
-          🎲 Generate New Card
+        <div className="input-group">
+          <label htmlFor="player-name">Your Name:</label>
+          <input
+            id="player-name"
+            type="text"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="Enter your name"
+            className="name-input"
+          />
+        </div>
+        <div className="input-group">
+          <label htmlFor="movie-name">Movie Name:</label>
+          <input
+            id="movie-name"
+            type="text"
+            value={movieName}
+            onChange={(e) => setMovieName(e.target.value)}
+            placeholder="Enter movie name"
+            className="name-input"
+          />
+        </div>
+        <button 
+          onClick={handleGenerate} 
+          className="generate-btn"
+          disabled={!playerName.trim() || !movieName.trim()}
+        >
+          🎲 Generate Card
         </button>
         {currentCard && (
           <button onClick={handleDownload} className="download-btn">
@@ -234,12 +483,17 @@ function BingoCardGenerator() {
       </div>
 
       <div className="card-container">
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <canvas 
+          ref={canvasRef} 
+          style={{ display: 'none' }} 
+        />
         {currentCard && (
           <img 
             src={currentCard} 
             alt="Generated Bingo Card" 
             className="bingo-card"
+            onClick={handleCanvasClick}
+            style={{ cursor: 'pointer' }}
           />
         )}
       </div>
