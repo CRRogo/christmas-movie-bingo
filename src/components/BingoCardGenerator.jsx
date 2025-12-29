@@ -157,10 +157,18 @@ function BingoCardGenerator() {
   const loadAssets = async () => {
     try {
       // Get base path from vite config (for GitHub Pages deployment)
+      // BASE_URL already includes trailing slash when set in vite.config.js
       const basePath = import.meta.env.BASE_URL || '/'
       
+      // Ensure basePath ends with / for proper path joining
+      const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`
+      
+      console.log('Base path:', normalizedBasePath)
+      const metadataUrl = `${normalizedBasePath}squares/metadata.json`
+      console.log('Loading metadata from:', metadataUrl)
+      
       // Load metadata first to get exact dimensions
-      const metadataResponse = await fetch(`${basePath}squares/metadata.json`)
+      const metadataResponse = await fetch(metadataUrl)
       if (!metadataResponse.ok) {
         throw new Error(`Failed to load metadata: ${metadataResponse.status} ${metadataResponse.statusText}`)
       }
@@ -173,7 +181,7 @@ function BingoCardGenerator() {
       // We'll place squares on top at their exact extraction positions
       const bgImg = new Image()
       bgImg.crossOrigin = 'anonymous'
-      bgImg.src = `${basePath}unnamed.webp`  // Use original image
+      bgImg.src = `${normalizedBasePath}unnamed.webp`  // Use original image
       
       await new Promise((resolve, reject) => {
         bgImg.onload = () => {
@@ -194,7 +202,7 @@ function BingoCardGenerator() {
         for (let col = 0; col < GRID_SIZE; col++) {
           const img = new Image()
           img.crossOrigin = 'anonymous'
-          const squarePath = `${basePath}squares/square_${row}_${col}.png`
+          const squarePath = `${normalizedBasePath}squares/square_${row}_${col}.png`
           img.src = squarePath
           
           await new Promise((resolve, reject) => {

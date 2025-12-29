@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "homepage": "https://CRRogo.github.io/christmas-movie-bingo",
+  "homepage": "https://crrogo.github.io/christmas-movie-bingo",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
