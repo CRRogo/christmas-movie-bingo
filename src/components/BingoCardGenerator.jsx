@@ -24,6 +24,64 @@ function seededShuffle(array, seed) {
   return shuffled
 }
 
+// Convert square key (e.g., "square_0_0.png") to index (0-24)
+function squareKeyToIndex(squareKey) {
+  const match = squareKey.match(/square_(\d+)_(\d+)\.png/)
+  if (match) {
+    const row = parseInt(match[1])
+    const col = parseInt(match[2])
+    return row * 5 + col
+  }
+  return null
+}
+
+// Convert index (0-24) to square key
+function indexToSquareKey(index) {
+  const row = Math.floor(index / 5)
+  const col = index % 5
+  return `square_${row}_${col}.png`
+}
+
+// Encode highlighted squares as a bitmask (25 bits = one number)
+function encodeHighlights(highlightedSquares) {
+  if (highlightedSquares.size === 0) return ''
+  
+  let bitmask = 0
+  highlightedSquares.forEach(squareKey => {
+    const index = squareKeyToIndex(squareKey)
+    if (index !== null && index >= 0 && index < 25) {
+      bitmask |= (1 << index)
+    }
+  })
+  
+  // Convert number to base36 string (0-9, a-z) for compact encoding
+  // Base36 is more efficient than base64 for numbers
+  return bitmask.toString(36)
+}
+
+// Decode base36 string to highlighted squares set
+function decodeHighlights(encoded) {
+  if (!encoded) return new Set()
+  
+  try {
+    // Parse base36 string to number
+    const bitmask = parseInt(encoded, 36)
+    
+    const highlighted = new Set()
+    for (let i = 0; i < 25; i++) {
+      if (bitmask & (1 << i)) {
+        const squareKey = indexToSquareKey(i)
+        highlighted.add(squareKey)
+      }
+    }
+    
+    return highlighted
+  } catch (e) {
+    console.error('Failed to decode highlights:', e)
+    return new Set()
+  }
+}
+
 function BingoCardGenerator() {
   const [backgroundImage, setBackgroundImage] = useState(null)
   const [squares, setSquares] = useState([])
@@ -35,17 +93,77 @@ function BingoCardGenerator() {
   const [currentShuffledSquares, setCurrentShuffledSquares] = useState(null)
   const [playerName, setPlayerName] = useState('')
   const [movieName, setMovieName] = useState('')
+  const [showWarningModal, setShowWarningModal] = useState(false)
   const canvasRef = useRef(null)
 
-  // Load all assets
+  // Load state from URL on mount and load assets
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlName = params.get('name')
+    const urlMovie = params.get('movie')
+    const urlHighlights = params.get('h') // Use 'h' for highlights (shorter)
+    
+    if (urlName) setPlayerName(urlName)
+    if (urlMovie) setMovieName(urlMovie)
+    if (urlHighlights) {
+      const decoded = decodeHighlights(urlHighlights)
+      setHighlightedSquares(decoded)
+    }
+    
+    // Load assets - this will generate the card automatically
     loadAssets()
   }, [])
+  
+  // Regenerate card when assets are loaded and URL params exist
+  useEffect(() => {
+    if (backgroundImage && squares.length && metadata) {
+      const params = new URLSearchParams(window.location.search)
+      const urlName = params.get('name')
+      const urlMovie = params.get('movie')
+      const urlHighlights = params.get('h')
+      
+      if (urlName && urlMovie) {
+        const seed = generateSeed(urlName, urlMovie)
+        const highlights = urlHighlights ? decodeHighlights(urlHighlights) : new Set()
+        generateCard(backgroundImage, squares, metadata, highlights, false, seed)
+        const winning = checkBingo(highlights, metadata)
+        setWinningSquares(winning)
+      } else if (!urlName && !urlMovie) {
+        // Generate random card if no URL params
+        const seed = Math.floor(Math.random() * 1000000)
+        generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
+        setWinningSquares(new Set())
+      }
+    }
+  }, [backgroundImage, squares, metadata])
+  
+  // Update URL when state changes
+  useEffect(() => {
+    if (playerName && movieName) {
+      const params = new URLSearchParams()
+      params.set('name', playerName)
+      params.set('movie', movieName)
+      
+      if (highlightedSquares.size > 0) {
+        const encoded = encodeHighlights(highlightedSquares)
+        params.set('h', encoded) // Use 'h' for highlights (shorter)
+      }
+      
+      const newUrl = `${window.location.pathname}?${params.toString()}`
+      window.history.replaceState({}, '', newUrl)
+    }
+  }, [playerName, movieName, highlightedSquares])
 
   const loadAssets = async () => {
     try {
+      // Get base path from vite config (for GitHub Pages deployment)
+      const basePath = import.meta.env.BASE_URL || '/'
+      
       // Load metadata first to get exact dimensions
-      const metadataResponse = await fetch('/squares/metadata.json')
+      const metadataResponse = await fetch(`${basePath}squares/metadata.json`)
+      if (!metadataResponse.ok) {
+        throw new Error(`Failed to load metadata: ${metadataResponse.status} ${metadataResponse.statusText}`)
+      }
       const metadataData = await metadataResponse.json()
       setMetadata(metadataData)
       
@@ -55,14 +173,17 @@ function BingoCardGenerator() {
       // We'll place squares on top at their exact extraction positions
       const bgImg = new Image()
       bgImg.crossOrigin = 'anonymous'
-      bgImg.src = '/unnamed.webp'  // Use original image
+      bgImg.src = `${basePath}unnamed.webp`  // Use original image
       
       await new Promise((resolve, reject) => {
         bgImg.onload = () => {
           console.log('Background loaded:', bgImg.width, 'x', bgImg.height)
           resolve()
         }
-        bgImg.onerror = reject
+        bgImg.onerror = (err) => {
+          console.error('Failed to load background image:', err)
+          reject(err)
+        }
       })
 
       setBackgroundImage(bgImg)
@@ -73,7 +194,7 @@ function BingoCardGenerator() {
         for (let col = 0; col < GRID_SIZE; col++) {
           const img = new Image()
           img.crossOrigin = 'anonymous'
-          const squarePath = `/squares/square_${row}_${col}.png`
+          const squarePath = `${basePath}squares/square_${row}_${col}.png`
           img.src = squarePath
           
           await new Promise((resolve, reject) => {
@@ -111,7 +232,44 @@ function BingoCardGenerator() {
       setSquares(squareImages)
       setIsLoading(false)
       
-      // Don't generate initial card - wait for name and movie inputs
+      // Always generate a card after loading assets
+      const params = new URLSearchParams(window.location.search)
+      const urlName = params.get('name')
+      const urlMovie = params.get('movie')
+      
+      if (bgImg && squareImages.length && metadataData) {
+        let seed
+        let initialHighlights = new Set()
+        
+        if (urlName && urlMovie) {
+          // Use URL parameters if they exist
+          const combined = `${urlName.toLowerCase().trim()}_${urlMovie.toLowerCase().trim()}`
+          let hash = 0
+          for (let i = 0; i < combined.length; i++) {
+            const char = combined.charCodeAt(i)
+            hash = ((hash << 5) - hash) + char
+            hash = hash & hash
+          }
+          seed = Math.abs(hash)
+          
+          // Get highlights from URL
+          const urlHighlights = params.get('h')
+          if (urlHighlights) {
+            initialHighlights = decodeHighlights(urlHighlights)
+          }
+        } else {
+          // Generate a random example card with a random seed
+          // Don't set the input fields, just generate a random card
+          seed = Math.floor(Math.random() * 1000000)
+        }
+        
+        // Generate card with seed and highlights
+        generateCard(bgImg, squareImages, metadataData, initialHighlights, false, seed)
+        
+        // Check for bingo with initial highlights
+        const winning = checkBingo(initialHighlights, metadataData)
+        setWinningSquares(winning)
+      }
     } catch (error) {
       console.error('Error loading assets:', error)
       setIsLoading(false)
@@ -365,6 +523,19 @@ function BingoCardGenerator() {
       return
     }
     
+    // Warn if there are highlighted squares
+    if (highlightedSquares.size > 0) {
+      setShowWarningModal(true)
+      return
+    }
+    
+    // Proceed with generation
+    proceedWithGeneration()
+  }
+
+  const proceedWithGeneration = () => {
+    setShowWarningModal(false)
+    
     if (backgroundImage && squares.length && metadata) {
       // Clear highlights and winning squares when generating new card
       setHighlightedSquares(new Set())
@@ -445,6 +616,32 @@ function BingoCardGenerator() {
 
   return (
     <div className="bingo-generator">
+      {showWarningModal && (
+        <div className="modal-overlay" onClick={() => setShowWarningModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>⚠️ Warning</h2>
+            <p>
+              You have <strong>{highlightedSquares.size}</strong> square(s) marked.
+              Generating a new card will clear all your marks.
+            </p>
+            <p>Do you want to continue?</p>
+            <div className="modal-buttons">
+              <button 
+                className="modal-btn modal-btn-cancel" 
+                onClick={() => setShowWarningModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-btn modal-btn-confirm" 
+                onClick={proceedWithGeneration}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="controls">
         <div className="input-group">
           <label htmlFor="player-name">Your Name:</label>
@@ -473,11 +670,11 @@ function BingoCardGenerator() {
           className="generate-btn"
           disabled={!playerName.trim() || !movieName.trim()}
         >
-          🎲 Generate Card
+          🎲 Generate
         </button>
         {currentCard && (
           <button onClick={handleDownload} className="download-btn">
-            💾 Download Card
+            💾 Download
           </button>
         )}
       </div>

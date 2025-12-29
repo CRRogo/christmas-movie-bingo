@@ -7,10 +7,12 @@
 
 .controls {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  align-items: center;
-  max-width: 500px;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -18,7 +20,8 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  width: 100%;
+  flex: 1;
+  min-width: 150px;
 }
 
 .input-group label {
@@ -30,9 +33,9 @@
 .name-input {
   padding: 10px 15px;
   font-size: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 215, 0, 0.4);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
@@ -44,8 +47,9 @@
 
 .name-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 215, 0, 0.8);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 .controls > .input-group + .input-group {
@@ -54,15 +58,15 @@
 
 .generate-btn,
 .download-btn {
-  padding: 12px 24px;
-  font-size: 1.1rem;
+  padding: 8px 16px;
+  font-size: 0.9rem;
   font-weight: 600;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 100%;
+  white-space: nowrap;
 }
 
 .generate-btn:disabled {
@@ -71,13 +75,15 @@
 }
 
 .generate-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
   color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .generate-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 12px rgba(34, 139, 34, 0.4);
+  background: linear-gradient(135deg, #32CD32 0%, #228B22 100%);
 }
 
 .generate-btn:active {
@@ -85,13 +91,16 @@
 }
 
 .download-btn {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  background: linear-gradient(135deg, #DAA520 0%, #FFD700 100%);
+  color: #8B0000;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-weight: 700;
 }
 
 .download-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 12px rgba(218, 165, 32, 0.4);
+  background: linear-gradient(135deg, #FFD700 0%, #DAA520 100%);
 }
 
 .download-btn:active {
@@ -99,12 +108,13 @@
 }
 
 .card-container {
-  background: white;
+  background: #f5f0e8;
   padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   max-width: 100%;
   overflow: auto;
+  border: 2px solid rgba(139, 0, 0, 0.2);
 }
 
 .bingo-card {
@@ -138,5 +148,95 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: #f5f0e8;
+  border-radius: 15px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: modalSlideIn 0.3s ease-out;
+  border: 2px solid rgba(139, 0, 0, 0.3);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-content h2 {
+  margin: 0 0 15px 0;
+  color: #8B0000;
+  font-size: 1.5rem;
+}
+
+.modal-content p {
+  margin: 10px 0;
+  color: #5a4a3a;
+  line-height: 1.5;
+}
+
+.modal-content p strong {
+  color: #8B0000;
+  font-weight: 600;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-btn-cancel {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.modal-btn-cancel:hover {
+  background: #d0d0d0;
+}
+
+.modal-btn-confirm {
+  background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
+  color: white;
+}
+
+.modal-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 139, 34, 0.4);
+  background: linear-gradient(135deg, #32CD32 0%, #228B22 100%);
 }
 
