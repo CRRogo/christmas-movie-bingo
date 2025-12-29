@@ -35,6 +35,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify build output
+        run: |
+          echo "Checking dist folder contents:"
+          ls -la dist/ || echo "dist folder not found"
+          echo "Checking for squares folder:"
+          ls -la dist/squares/ || echo "squares folder not found"
+          echo "Checking for metadata.json:"
+          ls -la dist/squares/metadata.json || echo "metadata.json not found"
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
