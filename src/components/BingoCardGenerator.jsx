@@ -160,22 +160,45 @@ function BingoCardGenerator() {
       // BASE_URL already includes trailing slash when set in vite.config.js
       const basePath = import.meta.env.BASE_URL || '/'
       
-      // Helper to construct asset URLs with base path
+      // Helper to construct asset URLs
+      // In production with base path, public folder files are at the root of the served directory
+      // So we need to use the base path prefix
       const getAssetUrl = (path) => {
         // Remove leading slash from path if present
         const cleanPath = path.startsWith('/') ? path.slice(1) : path
         // Ensure basePath ends with / and path doesn't start with /
         const normalizedBase = basePath.endsWith('/') ? basePath : `${basePath}/`
-        return `${normalizedBase}${cleanPath}`
+        // Construct the full path
+        const fullPath = `${normalizedBase}${cleanPath}`
+        return fullPath
       }
       
-      const metadataUrl = getAssetUrl('squares/metadata.json')
-      console.log('Base path:', basePath)
-      console.log('Loading metadata from:', metadataUrl)
-      console.log('Full URL would be:', window.location.origin + metadataUrl)
+      // Try multiple path strategies to find the assets
+      const tryLoadMetadata = async () => {
+        const pathsToTry = [
+          getAssetUrl('squares/metadata.json'), // With base path
+          '/squares/metadata.json', // Without base path (root)
+          './squares/metadata.json', // Relative
+          'squares/metadata.json', // Just the path
+        ]
+        
+        for (const path of pathsToTry) {
+          try {
+            console.log('Trying to load metadata from:', path)
+            const response = await fetch(path)
+            if (response.ok) {
+              console.log('Successfully loaded metadata from:', path)
+              return response
+            }
+          } catch (e) {
+            console.log('Failed to load from:', path, e)
+            continue
+          }
+        }
+        throw new Error('Failed to load metadata from all attempted paths')
+      }
       
-      // Load metadata first to get exact dimensions
-      const metadataResponse = await fetch(metadataUrl)
+      const metadataResponse = await tryLoadMetadata()
       if (!metadataResponse.ok) {
         throw new Error(`Failed to load metadata: ${metadataResponse.status} ${metadataResponse.statusText}`)
       }
