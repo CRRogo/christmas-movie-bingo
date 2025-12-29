@@ -174,28 +174,47 @@ function BingoCardGenerator() {
       }
       
       // Try multiple path strategies to find the assets
+      // GitHub Pages might serve files differently than expected
       const tryLoadMetadata = async () => {
+        // Get current pathname to understand the deployment structure
+        const currentPath = window.location.pathname
+        const isBasePath = currentPath.includes('/christmas-movie-bingo/')
+        
         const pathsToTry = [
-          getAssetUrl('squares/metadata.json'), // With base path
-          '/squares/metadata.json', // Without base path (root)
-          './squares/metadata.json', // Relative
-          'squares/metadata.json', // Just the path
+          getAssetUrl('squares/metadata.json'), // With base path: /christmas-movie-bingo/squares/metadata.json
+          '/squares/metadata.json', // Absolute from root
+          './squares/metadata.json', // Relative to current page
+          'squares/metadata.json', // Relative path
+          // Try with current pathname as base
+          currentPath.replace(/\/$/, '') + '/squares/metadata.json',
+          // Try without the trailing index.html if present
+          currentPath.replace(/index\.html$/, '') + 'squares/metadata.json',
         ]
+        
+        console.log('Current pathname:', currentPath)
+        console.log('Is base path:', isBasePath)
+        console.log('Base URL:', import.meta.env.BASE_URL)
         
         for (const path of pathsToTry) {
           try {
             console.log('Trying to load metadata from:', path)
-            const response = await fetch(path)
+            const response = await fetch(path, { method: 'HEAD' })
             if (response.ok) {
-              console.log('Successfully loaded metadata from:', path)
-              return response
+              console.log('✓ Successfully found metadata at:', path)
+              // Now fetch with GET to get the actual data
+              const dataResponse = await fetch(path)
+              if (dataResponse.ok) {
+                return dataResponse
+              }
+            } else {
+              console.log('✗ Failed with status:', response.status, response.statusText)
             }
           } catch (e) {
-            console.log('Failed to load from:', path, e)
+            console.log('✗ Exception loading from:', path, e.message)
             continue
           }
         }
-        throw new Error('Failed to load metadata from all attempted paths')
+        throw new Error('Failed to load metadata from all attempted paths. Check console for details.')
       }
       
       const metadataResponse = await tryLoadMetadata()
