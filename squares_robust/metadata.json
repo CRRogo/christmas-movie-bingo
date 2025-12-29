@@ -1,0 +1,383 @@
+{
+  "square_size": {
+    "width": 99,
+    "height": 139
+  },
+  "grid_bounds": {
+    "top": 140,
+    "bottom": 835,
+    "left": 62,
+    "right": 557
+  },
+  "detected_lines": {
+    "horizontal": [
+      140,
+      279,
+      418,
+      557,
+      696,
+      835
+    ],
+    "vertical": [
+      62,
+      161,
+      260,
+      359,
+      458,
+      557
+    ]
+  },
+  "total_squares": 25,
+  "squares": {
+    "square_0_0.png": {
+      "row": 0,
+      "col": 0,
+      "original_bounds": [
+        62,
+        140,
+        161,
+        279
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_0_1.png": {
+      "row": 0,
+      "col": 1,
+      "original_bounds": [
+        161,
+        140,
+        260,
+        279
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_0_2.png": {
+      "row": 0,
+      "col": 2,
+      "original_bounds": [
+        260,
+        140,
+        359,
+        279
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_0_3.png": {
+      "row": 0,
+      "col": 3,
+      "original_bounds": [
+        359,
+        140,
+        458,
+        279
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_0_4.png": {
+      "row": 0,
+      "col": 4,
+      "original_bounds": [
+        458,
+        140,
+        557,
+        279
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_1_0.png": {
+      "row": 1,
+      "col": 0,
+      "original_bounds": [
+        62,
+        279,
+        161,
+        418
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_1_1.png": {
+      "row": 1,
+      "col": 1,
+      "original_bounds": [
+        161,
+        279,
+        260,
+        418
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_1_2.png": {
+      "row": 1,
+      "col": 2,
+      "original_bounds": [
+        260,
+        279,
+        359,
+        418
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_1_3.png": {
+      "row": 1,
+      "col": 3,
+      "original_bounds": [
+        359,
+        279,
+        458,
+        418
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_1_4.png": {
+      "row": 1,
+      "col": 4,
+      "original_bounds": [
+        458,
+        279,
+        557,
+        418
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_2_0.png": {
+      "row": 2,
+      "col": 0,
+      "original_bounds": [
+        62,
+        418,
+        161,
+        557
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_2_1.png": {
+      "row": 2,
+      "col": 1,
+      "original_bounds": [
+        161,
+        418,
+        260,
+        557
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_2_2.png": {
+      "row": 2,
+      "col": 2,
+      "original_bounds": [
+        260,
+        418,
+        359,
+        557
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_2_3.png": {
+      "row": 2,
+      "col": 3,
+      "original_bounds": [
+        359,
+        418,
+        458,
+        557
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_2_4.png": {
+      "row": 2,
+      "col": 4,
+      "original_bounds": [
+        458,
+        418,
+        557,
+        557
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_3_0.png": {
+      "row": 3,
+      "col": 0,
+      "original_bounds": [
+        62,
+        557,
+        161,
+        696
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_3_1.png": {
+      "row": 3,
+      "col": 1,
+      "original_bounds": [
+        161,
+        557,
+        260,
+        696
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_3_2.png": {
+      "row": 3,
+      "col": 2,
+      "original_bounds": [
+        260,
+        557,
+        359,
+        696
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_3_3.png": {
+      "row": 3,
+      "col": 3,
+      "original_bounds": [
+        359,
+        557,
+        458,
+        696
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_3_4.png": {
+      "row": 3,
+      "col": 4,
+      "original_bounds": [
+        458,
+        557,
+        557,
+        696
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_4_0.png": {
+      "row": 4,
+      "col": 0,
+      "original_bounds": [
+        62,
+        696,
+        161,
+        835
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_4_1.png": {
+      "row": 4,
+      "col": 1,
+      "original_bounds": [
+        161,
+        696,
+        260,
+        835
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_4_2.png": {
+      "row": 4,
+      "col": 2,
+      "original_bounds": [
+        260,
+        696,
+        359,
+        835
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_4_3.png": {
+      "row": 4,
+      "col": 3,
+      "original_bounds": [
+        359,
+        696,
+        458,
+        835
+      ],
+      "size": [
+        99,
+        139
+      ]
+    },
+    "square_4_4.png": {
+      "row": 4,
+      "col": 4,
+      "original_bounds": [
+        458,
+        696,
+        557,
+        835
+      ],
+      "size": [
+        99,
+        139
+      ]
+    }
+  }
+}

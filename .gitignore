@@ -1,0 +1,31 @@
+# Generated output
+squares/
+*.png
+!bingo_card.png
+!public/**/*.png
+background_template*.png
+grid_config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+dist/
+.vite/
+
+
