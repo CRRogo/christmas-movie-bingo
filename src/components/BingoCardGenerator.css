@@ -122,6 +122,11 @@
   height: auto;
   display: block;
   border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .loading {
