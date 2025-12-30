@@ -897,7 +897,7 @@ function BingoCardGenerator() {
                 const newValue = e.target.value
                 updateCardClickableState(playerName, newValue)
               }}
-              placeholder="Enter movie name"
+              placeholder="Movie name"
               className="name-input"
             />
             {movieName !== lastGeneratedMovie && lastGeneratedMovie && (
@@ -941,7 +941,7 @@ function BingoCardGenerator() {
                 const newValue = e.target.value
                 updateCardClickableState(newValue, movieName)
               }}
-              placeholder="Enter your name"
+              placeholder="Your name"
               className="name-input"
             />
             {playerName !== lastGeneratedName && lastGeneratedName && (
