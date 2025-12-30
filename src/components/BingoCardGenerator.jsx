@@ -137,7 +137,7 @@ function BingoCardGenerator() {
     }
   }, [backgroundImage, squares, metadata])
   
-  // Update URL when state changes
+  // Update URL when highlights change (but not when name/movie change)
   useEffect(() => {
     if (playerName && movieName) {
       const params = new URLSearchParams()
@@ -152,7 +152,7 @@ function BingoCardGenerator() {
       const newUrl = `${window.location.pathname}?${params.toString()}`
       window.history.replaceState({}, '', newUrl)
     }
-  }, [playerName, movieName, highlightedSquares])
+  }, [highlightedSquares]) // Only update URL when highlights change, not when name/movie change
 
   const loadAssets = async () => {
     try {
@@ -603,6 +603,16 @@ function BingoCardGenerator() {
       
       // Generate new card with seeded shuffle
       generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
+      
+      // Update URL with name and movie after generation
+      if (playerName && movieName) {
+        const params = new URLSearchParams()
+        params.set('name', playerName)
+        params.set('movie', movieName)
+        // Don't include highlights since we just cleared them
+        const newUrl = `${window.location.pathname}?${params.toString()}`
+        window.history.replaceState({}, '', newUrl)
+      }
     }
   }
 
