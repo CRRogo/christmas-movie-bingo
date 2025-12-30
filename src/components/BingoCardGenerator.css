@@ -98,7 +98,8 @@
 }
 
 .generate-btn,
-.download-btn {
+.download-btn,
+.clear-btn {
   padding: 8px 16px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -108,11 +109,12 @@
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   white-space: nowrap;
-}
-
-.generate-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  min-width: 120px;
+  width: 120px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .generate-btn {
@@ -121,13 +123,34 @@
   border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.generate-btn:hover {
+.generate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.generate-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(34, 139, 34, 0.4);
   background: linear-gradient(135deg, #32CD32 0%, #228B22 100%);
 }
 
-.generate-btn:active {
+.generate-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.generate-btn.clear-btn {
+  background: linear-gradient(135deg, #1E90FF 0%, #4169E1 100%);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.generate-btn.clear-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(30, 144, 255, 0.4);
+  background: linear-gradient(135deg, #4169E1 0%, #1E90FF 100%);
+}
+
+.generate-btn.clear-btn:active {
   transform: translateY(0);
 }
 

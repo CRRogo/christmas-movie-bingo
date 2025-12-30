@@ -94,6 +94,7 @@ function BingoCardGenerator() {
   const [playerName, setPlayerName] = useState('')
   const [movieName, setMovieName] = useState('')
   const [showWarningModal, setShowWarningModal] = useState(false)
+  const [modalAction, setModalAction] = useState('generate') // 'generate' or 'clear'
   const [isCardClickable, setIsCardClickable] = useState(true)
   const [lastGeneratedName, setLastGeneratedName] = useState('')
   const [lastGeneratedMovie, setLastGeneratedMovie] = useState('')
@@ -622,12 +623,28 @@ function BingoCardGenerator() {
     
     // Warn if there are highlighted squares
     if (highlightedSquares.size > 0) {
+      setModalAction('generate')
       setShowWarningModal(true)
       return
     }
     
     // Proceed with generation
     proceedWithGeneration()
+  }
+
+  const handleClear = () => {
+    setModalAction('clear')
+    setShowWarningModal(true)
+  }
+
+  const proceedWithClear = () => {
+    setShowWarningModal(false)
+    setHighlightedSquares(new Set())
+    setWinningSquares(new Set())
+    // Regenerate card without highlights
+    if (backgroundImage && squares.length && metadata) {
+      generateCard(backgroundImage, squares, metadata, new Set(), true)
+    }
   }
 
   const proceedWithGeneration = () => {
@@ -734,7 +751,9 @@ function BingoCardGenerator() {
             <h2>⚠️ Warning</h2>
             <p>
               You have <strong>{highlightedSquares.size}</strong> square(s) marked.
-              Generating a new card will clear all your marks.
+              {modalAction === 'generate' 
+                ? ' Generating a new card will clear all your marks.'
+                : ' Clearing will remove all your marks.'}
             </p>
             <p>Do you want to continue?</p>
             <div className="modal-buttons">
@@ -746,7 +765,7 @@ function BingoCardGenerator() {
               </button>
               <button 
                 className="modal-btn modal-btn-confirm" 
-                onClick={proceedWithGeneration}
+                onClick={modalAction === 'generate' ? proceedWithGeneration : proceedWithClear}
               >
                 Continue
               </button>
@@ -843,13 +862,31 @@ function BingoCardGenerator() {
             )}
           </div>
         </div>
-        <button 
-          onClick={handleGenerate} 
-          className="generate-btn"
-          disabled={!playerName.trim() || !movieName.trim()}
-        >
-          🎲 Generate
-        </button>
+        {(highlightedSquares.size > 0 && 
+          playerName.trim() === lastGeneratedName && 
+          movieName.trim() === lastGeneratedMovie) ? (
+          <button 
+            onClick={handleClear} 
+            className="generate-btn clear-btn"
+          >
+            Clear
+          </button>
+        ) : (
+          <button 
+            onClick={handleGenerate} 
+            className="generate-btn"
+            disabled={
+              !playerName.trim() || 
+              !movieName.trim() || 
+              (currentCard && 
+               playerName.trim() === lastGeneratedName && 
+               movieName.trim() === lastGeneratedMovie && 
+               highlightedSquares.size === 0)
+            }
+          >
+            🎲 Generate
+          </button>
+        )}
         {currentCard && (
           <button onClick={handleDownload} className="download-btn">
             💾 Download
