@@ -610,6 +610,41 @@ function BingoCardGenerator() {
       }
     }
 
+    // Draw movie name in upper left and person name in upper right
+    if (playerName && movieName) {
+      ctx.save()
+      
+      // Set up text styling with better contrast
+      const fontSize = Math.max(24, bgImg.width / 25) // Responsive font size
+      ctx.font = `bold ${fontSize}px serif`
+      ctx.fillStyle = '#FFFFFF' // White text for better contrast
+      ctx.strokeStyle = '#8B0000' // Dark red outline
+      ctx.lineWidth = Math.max(4, bgImg.width / 100) // Thicker outline, responsive
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)' // Dark shadow
+      ctx.shadowBlur = 8
+      ctx.shadowOffsetX = 2
+      ctx.shadowOffsetY = 2
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'top'
+      
+      // Draw movie name in upper left with padding
+      const leftPadding = 20
+      const topPadding = 15
+      const movieText = movieName.trim()
+      // Draw shadow/outline first, then fill
+      ctx.strokeText(movieText, leftPadding, topPadding)
+      ctx.fillText(movieText, leftPadding, topPadding)
+      
+      // Draw person name in upper right
+      ctx.textAlign = 'right'
+      const rightPadding = bgImg.width - 20
+      const personText = playerName.trim()
+      ctx.strokeText(personText, rightPadding, topPadding)
+      ctx.fillText(personText, rightPadding, topPadding)
+      
+      ctx.restore()
+    }
+
     // Convert canvas to image data URL
     const dataUrl = canvas.toDataURL('image/png')
     setCurrentCard(dataUrl)
@@ -775,50 +810,6 @@ function BingoCardGenerator() {
       )}
       <div className="controls">
         <div className="input-group">
-          <label htmlFor="player-name">Your Name:</label>
-          <div>
-            <input
-              id="player-name"
-              type="text"
-              value={playerName}
-              onChange={(e) => {
-                const newValue = e.target.value
-                setPlayerName(newValue)
-                updateCardClickableState(newValue, movieName)
-              }}
-              onPaste={(e) => {
-                // Handle paste event
-                setTimeout(() => {
-                  const newValue = e.target.value
-                  updateCardClickableState(newValue, movieName)
-                }, 0)
-              }}
-              onInput={(e) => {
-                // Handle autocomplete and other input events
-                const newValue = e.target.value
-                updateCardClickableState(newValue, movieName)
-              }}
-              placeholder="Enter your name"
-              className="name-input"
-            />
-            {playerName !== lastGeneratedName && lastGeneratedName && (
-              <button
-                className="undo-button"
-                onClick={() => {
-                  setPlayerName(lastGeneratedName)
-                  updateCardClickableState(lastGeneratedName, movieName)
-                }}
-                title="Undo changes"
-                type="button"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
-                </svg>
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="input-group">
           <label htmlFor="movie-name">Movie Name:</label>
           <div>
             <input
@@ -851,6 +842,50 @@ function BingoCardGenerator() {
                 onClick={() => {
                   setMovieName(lastGeneratedMovie)
                   updateCardClickableState(playerName, lastGeneratedMovie)
+                }}
+                title="Undo changes"
+                type="button"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="input-group">
+          <label htmlFor="player-name">Your Name:</label>
+          <div>
+            <input
+              id="player-name"
+              type="text"
+              value={playerName}
+              onChange={(e) => {
+                const newValue = e.target.value
+                setPlayerName(newValue)
+                updateCardClickableState(newValue, movieName)
+              }}
+              onPaste={(e) => {
+                // Handle paste event
+                setTimeout(() => {
+                  const newValue = e.target.value
+                  updateCardClickableState(newValue, movieName)
+                }, 0)
+              }}
+              onInput={(e) => {
+                // Handle autocomplete and other input events
+                const newValue = e.target.value
+                updateCardClickableState(newValue, movieName)
+              }}
+              placeholder="Enter your name"
+              className="name-input"
+            />
+            {playerName !== lastGeneratedName && lastGeneratedName && (
+              <button
+                className="undo-button"
+                onClick={() => {
+                  setPlayerName(lastGeneratedName)
+                  updateCardClickableState(lastGeneratedName, movieName)
                 }}
                 title="Undo changes"
                 type="button"
