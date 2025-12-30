@@ -1,12 +1,17 @@
-# Generated output
-squares/
-*.png
-!bingo_card.png
-!public/**/*.png
-!public/squares/**
-!public/squares/*.json
-background_template*.png
-grid_config.json
+# Generated output (webapp assets - these are tracked)
+# squares/ in root is used by webapp
+# public/squares/ is used by webapp
+
+# Generated output from tools (ignore these)
+tools/*.png
+tools/background_template*.png
+tools/grid_config.json
+tools/squares_*/
+tools/debug_squares/
+tools/verified_squares/
+tools/comparison.png
+tools/square_*.png
+tools/grid_*.png
 
 # Python
 __pycache__/
