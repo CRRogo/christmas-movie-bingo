@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import QRCode from 'qrcode'
 import './BingoCardGenerator.css'
 
 const GRID_SIZE = 5
@@ -157,25 +158,28 @@ function BingoCardGenerator() {
   
   // Regenerate card when assets are loaded and URL params exist
   useEffect(() => {
-    if (backgroundImage && squares.length && metadata) {
-      const params = new URLSearchParams(window.location.search)
-      const urlName = params.get('name')
-      const urlMovie = params.get('movie')
-      const urlHighlights = params.get('h')
-      
-      if (urlName && urlMovie) {
-        const seed = generateSeed(urlName, urlMovie)
-        const highlights = urlHighlights ? decodeHighlights(urlHighlights) : new Set()
-        generateCard(backgroundImage, squares, metadata, highlights, false, seed)
-        const winning = checkBingo(highlights, metadata)
-        setWinningSquares(winning)
-      } else if (!urlName && !urlMovie) {
-        // Generate random card if no URL params
-        const seed = Math.floor(Math.random() * 1000000)
-        generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
-        setWinningSquares(new Set())
+    const regenerateCard = async () => {
+      if (backgroundImage && squares.length && metadata) {
+        const params = new URLSearchParams(window.location.search)
+        const urlName = params.get('name')
+        const urlMovie = params.get('movie')
+        const urlHighlights = params.get('h')
+        
+        if (urlName && urlMovie) {
+          const seed = generateSeed(urlName, urlMovie)
+          const highlights = urlHighlights ? decodeHighlights(urlHighlights) : new Set()
+          await generateCard(backgroundImage, squares, metadata, highlights, false, seed)
+          const winning = checkBingo(highlights, metadata)
+          setWinningSquares(winning)
+        } else if (!urlName && !urlMovie) {
+          // Generate random card if no URL params
+          const seed = Math.floor(Math.random() * 1000000)
+          await generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
+          setWinningSquares(new Set())
+        }
       }
     }
+    regenerateCard()
   }, [backgroundImage, squares, metadata])
   
   // Update URL when highlights change (but not when name/movie change)
@@ -362,7 +366,7 @@ function BingoCardGenerator() {
         }
         
         // Generate card with seed and highlights
-        generateCard(bgImg, squareImages, metadataData, initialHighlights, false, seed)
+        await generateCard(bgImg, squareImages, metadataData, initialHighlights, false, seed)
         
         // Check for bingo with initial highlights
         const winning = checkBingo(initialHighlights, metadataData)
@@ -467,7 +471,7 @@ function BingoCardGenerator() {
     return winning
   }
 
-  const generateCard = (bgImg, squareImages, metadataData, highlights = highlightedSquares, preserveShuffle = false, seed = null) => {
+  const generateCard = async (bgImg, squareImages, metadataData, highlights = highlightedSquares, preserveShuffle = false, seed = null) => {
     if (!bgImg || !squareImages.length || !metadataData) return
 
     const canvas = canvasRef.current
@@ -645,9 +649,66 @@ function BingoCardGenerator() {
       ctx.restore()
     }
 
-    // Convert canvas to image data URL
+    // Convert canvas to image data URL (without QR code for display)
     const dataUrl = canvas.toDataURL('image/png')
     setCurrentCard(dataUrl)
+  }
+  
+  const addQRCodeToImage = async (imageDataUrl) => {
+    try {
+      // Create a new canvas for the download version with QR code
+      const downloadCanvas = document.createElement('canvas')
+      const downloadCtx = downloadCanvas.getContext('2d')
+      
+      // Load the current card image
+      const cardImg = new Image()
+      cardImg.src = imageDataUrl
+      
+      await new Promise((resolveImg, rejectImg) => {
+        cardImg.onload = resolveImg
+        cardImg.onerror = rejectImg
+      })
+      
+      downloadCanvas.width = cardImg.width
+      downloadCanvas.height = cardImg.height
+      
+      // Draw the card image
+      downloadCtx.drawImage(cardImg, 0, 0)
+      
+      // Draw QR code in bottom right
+      const qrCodeSize = Math.min(120, cardImg.width / 6) // Responsive QR code size
+      const qrPadding = 15
+      const qrX = cardImg.width - qrCodeSize - qrPadding
+      const qrY = cardImg.height - qrCodeSize - qrPadding
+      
+      // Generate QR code for current URL
+      const currentUrl = window.location.href
+      const qrDataUrl = await QRCode.toDataURL(currentUrl, {
+        width: qrCodeSize,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      
+      // Draw QR code on canvas
+      const qrImg = new Image()
+      qrImg.src = qrDataUrl
+      await new Promise((resolve, reject) => {
+        qrImg.onload = () => {
+          downloadCtx.drawImage(qrImg, qrX, qrY, qrCodeSize, qrCodeSize)
+          resolve()
+        }
+        qrImg.onerror = reject
+      })
+      
+      return downloadCanvas.toDataURL('image/png')
+    } catch (error) {
+      console.error('Failed to add QR code:', error)
+      // If QR code fails, just return the original image
+      return imageDataUrl
+    }
   }
 
   const handleGenerate = () => {
@@ -672,17 +733,17 @@ function BingoCardGenerator() {
     setShowWarningModal(true)
   }
 
-  const proceedWithClear = () => {
+  const proceedWithClear = async () => {
     setShowWarningModal(false)
     setHighlightedSquares(new Set())
     setWinningSquares(new Set())
     // Regenerate card without highlights
     if (backgroundImage && squares.length && metadata) {
-      generateCard(backgroundImage, squares, metadata, new Set(), true)
+      await generateCard(backgroundImage, squares, metadata, new Set(), true)
     }
   }
 
-  const proceedWithGeneration = () => {
+  const proceedWithGeneration = async () => {
     setShowWarningModal(false)
     
     if (backgroundImage && squares.length && metadata) {
@@ -694,7 +755,7 @@ function BingoCardGenerator() {
       const seed = generateSeed(playerName, movieName)
       
       // Generate new card with seeded shuffle
-      generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
+      await generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
       
       // Update last generated values and re-enable clicking
       setLastGeneratedName(playerName)
@@ -713,7 +774,7 @@ function BingoCardGenerator() {
     }
   }
 
-  const handleCanvasClick = (e) => {
+  const handleCanvasClick = async (e) => {
     if (!metadata || !currentCard || !isCardClickable) return
 
     const img = e.currentTarget
@@ -751,7 +812,7 @@ function BingoCardGenerator() {
             
             // Regenerate card with updated highlights (preserve shuffle)
             if (backgroundImage && squares.length) {
-              generateCard(backgroundImage, squares, metadata, newHighlighted, true)
+              await generateCard(backgroundImage, squares, metadata, newHighlighted, true)
             }
             return // Exit early after finding the clicked square
           }
@@ -760,12 +821,15 @@ function BingoCardGenerator() {
     }
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!currentCard) return
+
+    // Add QR code to the downloaded version
+    const cardWithQR = await addQRCodeToImage(currentCard)
 
     const link = document.createElement('a')
     link.download = `bingo-card-${Date.now()}.png`
-    link.href = currentCard
+    link.href = cardWithQR
     link.click()
   }
 
