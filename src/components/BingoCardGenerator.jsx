@@ -94,6 +94,9 @@ function BingoCardGenerator() {
   const [playerName, setPlayerName] = useState('')
   const [movieName, setMovieName] = useState('')
   const [showWarningModal, setShowWarningModal] = useState(false)
+  const [isCardClickable, setIsCardClickable] = useState(true)
+  const [lastGeneratedName, setLastGeneratedName] = useState('')
+  const [lastGeneratedMovie, setLastGeneratedMovie] = useState('')
   const canvasRef = useRef(null)
 
   // Load state from URL on mount and load assets
@@ -103,8 +106,14 @@ function BingoCardGenerator() {
     const urlMovie = params.get('movie')
     const urlHighlights = params.get('h') // Use 'h' for highlights (shorter)
     
-    if (urlName) setPlayerName(urlName)
-    if (urlMovie) setMovieName(urlMovie)
+    if (urlName) {
+      setPlayerName(urlName)
+      setLastGeneratedName(urlName)
+    }
+    if (urlMovie) {
+      setMovieName(urlMovie)
+      setLastGeneratedMovie(urlMovie)
+    }
     if (urlHighlights) {
       const decoded = decodeHighlights(urlHighlights)
       setHighlightedSquares(decoded)
@@ -113,6 +122,37 @@ function BingoCardGenerator() {
     // Load assets - this will generate the card automatically
     loadAssets()
   }, [])
+  
+  // Helper function to check if card should be clickable
+  const updateCardClickableState = (name, movie) => {
+    const nameChanged = name !== lastGeneratedName
+    const movieChanged = movie !== lastGeneratedMovie
+    
+    // If we have last generated values, check if current values match
+    if (lastGeneratedName && lastGeneratedMovie) {
+      if (nameChanged || movieChanged) {
+        // Disable if values have changed from last generated
+        setIsCardClickable(false)
+      } else {
+        // Re-enable if values match last generated
+        setIsCardClickable(true)
+      }
+    } else {
+      // If no last generated values exist, disable as soon as user starts modifying
+      // This handles the case where user starts typing on a fresh page
+      if (name.trim() || movie.trim()) {
+        setIsCardClickable(false)
+      } else {
+        // Re-enable if both fields are empty (initial state)
+        setIsCardClickable(true)
+      }
+    }
+  }
+  
+  // Disable card clicking if name or movie has changed from last generated values
+  useEffect(() => {
+    updateCardClickableState(playerName, movieName)
+  }, [playerName, movieName, lastGeneratedName, lastGeneratedMovie])
   
   // Regenerate card when assets are loaded and URL params exist
   useEffect(() => {
@@ -604,6 +644,11 @@ function BingoCardGenerator() {
       // Generate new card with seeded shuffle
       generateCard(backgroundImage, squares, metadata, new Set(), false, seed)
       
+      // Update last generated values and re-enable clicking
+      setLastGeneratedName(playerName)
+      setLastGeneratedMovie(movieName)
+      setIsCardClickable(true)
+      
       // Update URL with name and movie after generation
       if (playerName && movieName) {
         const params = new URLSearchParams()
@@ -617,7 +662,7 @@ function BingoCardGenerator() {
   }
 
   const handleCanvasClick = (e) => {
-    if (!metadata || !currentCard) return
+    if (!metadata || !currentCard || !isCardClickable) return
 
     const img = e.currentTarget
     const rect = img.getBoundingClientRect()
@@ -712,25 +757,91 @@ function BingoCardGenerator() {
       <div className="controls">
         <div className="input-group">
           <label htmlFor="player-name">Your Name:</label>
-          <input
-            id="player-name"
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Enter your name"
-            className="name-input"
-          />
+          <div>
+            <input
+              id="player-name"
+              type="text"
+              value={playerName}
+              onChange={(e) => {
+                const newValue = e.target.value
+                setPlayerName(newValue)
+                updateCardClickableState(newValue, movieName)
+              }}
+              onPaste={(e) => {
+                // Handle paste event
+                setTimeout(() => {
+                  const newValue = e.target.value
+                  updateCardClickableState(newValue, movieName)
+                }, 0)
+              }}
+              onInput={(e) => {
+                // Handle autocomplete and other input events
+                const newValue = e.target.value
+                updateCardClickableState(newValue, movieName)
+              }}
+              placeholder="Enter your name"
+              className="name-input"
+            />
+            {playerName !== lastGeneratedName && lastGeneratedName && (
+              <button
+                className="undo-button"
+                onClick={() => {
+                  setPlayerName(lastGeneratedName)
+                  updateCardClickableState(lastGeneratedName, movieName)
+                }}
+                title="Undo changes"
+                type="button"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         <div className="input-group">
           <label htmlFor="movie-name">Movie Name:</label>
-          <input
-            id="movie-name"
-            type="text"
-            value={movieName}
-            onChange={(e) => setMovieName(e.target.value)}
-            placeholder="Enter movie name"
-            className="name-input"
-          />
+          <div>
+            <input
+              id="movie-name"
+              type="text"
+              value={movieName}
+              onChange={(e) => {
+                const newValue = e.target.value
+                setMovieName(newValue)
+                updateCardClickableState(playerName, newValue)
+              }}
+              onPaste={(e) => {
+                // Handle paste event
+                setTimeout(() => {
+                  const newValue = e.target.value
+                  updateCardClickableState(playerName, newValue)
+                }, 0)
+              }}
+              onInput={(e) => {
+                // Handle autocomplete and other input events
+                const newValue = e.target.value
+                updateCardClickableState(playerName, newValue)
+              }}
+              placeholder="Enter movie name"
+              className="name-input"
+            />
+            {movieName !== lastGeneratedMovie && lastGeneratedMovie && (
+              <button
+                className="undo-button"
+                onClick={() => {
+                  setMovieName(lastGeneratedMovie)
+                  updateCardClickableState(playerName, lastGeneratedMovie)
+                }}
+                title="Undo changes"
+                type="button"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         <button 
           onClick={handleGenerate} 
@@ -757,7 +868,10 @@ function BingoCardGenerator() {
             alt="Generated Bingo Card" 
             className="bingo-card"
             onClick={handleCanvasClick}
-            style={{ cursor: 'pointer' }}
+            style={{ 
+              cursor: isCardClickable ? 'pointer' : 'not-allowed',
+              opacity: isCardClickable ? 1 : 0.7
+            }}
           />
         )}
       </div>
